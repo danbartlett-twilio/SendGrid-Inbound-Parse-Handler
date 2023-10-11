@@ -1,0 +1,1 @@
+sam deploy --stack-name SendGridInboundParseHandler --template template.yaml --profile YOUR-AWS-PROFILE

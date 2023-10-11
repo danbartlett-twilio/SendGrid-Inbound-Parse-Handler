@@ -1,0 +1,70 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  GenericSendGridInboundEmailHandler
+
+  A stub for a Lambda subscribed to SNS topic and processes messages (sendgrid inbound emails from inbound parse) as required by your business.
+
+Resources:
+
+  ##########################################################################
+  #  Policy
+  #                          
+  #  Provide permission for SNS to invoke the Lambda function
+  ########################################################################## 
+  #SendGridGenericHandlerFunctionPermission:
+  #  Type: 'AWS::Lambda::Permission'
+  #  Properties:
+  #    Action: 'lambda:InvokeFunction'
+  #    FunctionName: !Ref SendGridGenericHandlerFunction
+  #    Principal: sns.amazonaws.com
+
+  ##########################################################################
+  #  (SendGridGenericInboundEmailHandlerFunction) Lambda Function                            
+  #                          
+  #  This function receives messages messages from SNS and inspects them  
+  #  for additional processing. This is a "stub" function ready for you
+  # to add your additional functionality!
+  ##########################################################################
+  SendGridGenericInboundEmailHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:      
+      Description: Lambda invoked by SNS event for additional processing of inbound emails
+      CodeUri: lambdas/generic-handler/
+      Handler: app.lambdaHandler
+      AutoPublishAlias: live
+      Runtime: nodejs18.x
+      Architectures:
+        - arm64
+      Role: !GetAtt SendGridGenericInboundEmailHandlerFunctionRole.Arn
+      Timeout: 3
+      MemorySize: 128
+      Environment:
+        Variables:
+          REGION: !Ref "AWS::Region"
+      Events:
+        SNSEvent:
+          Type: SNS
+          Properties:            
+            Topic: !ImportValue 'SGInboundEmailTopicARN'
+
+  ##########################################################################
+  #  Role for Lambda Function                            
+  #                          
+  #  Basic privs, add more as needed.
+  ##########################################################################
+  SendGridGenericInboundEmailHandlerFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole    
+      ManagedPolicyArns:        
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+    

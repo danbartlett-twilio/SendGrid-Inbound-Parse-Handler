@@ -1,0 +1,60 @@
+openapi: "3.0.1"
+info:
+  title: "SendGrid Inbound Parse API Endpoint -- passes requests to SQS Queue."
+  version: "2021-03-31 17:32:29UTC"
+paths:
+  ############################################
+  # Path has no query string parameters
+  ############################################
+  /sendgrid-inbound:
+    post:
+      responses:
+        default:
+          description: "Response for POST /"
+      x-amazon-apigateway-integration:
+        type: "aws_proxy"
+        integrationSubtype: "SQS-SendMessage"
+        credentials:
+          Fn::GetAtt: [SGInboundEmailToSQSApiRole, Arn]
+        connectionType: "INTERNET"
+        payloadFormatVersion: "1.0"
+        requestParameters:
+          MessageBody: "$request.body"
+          ##############################################
+          # This endpoint requires basic authentication.
+          # If the authorization header is not present,
+          # the request will fail (400 error). The authorization
+          # header is passed to the Lambda function
+          # where is it validated.
+          # content-type header is also required as it
+          # is need to parse the form data.
+          # MessageAttributes are pulled from the request
+          # and included in the message send to the
+          # SQS queue.
+          ##############################################
+          MessageAttributes: >-            
+            {
+              "authorization": {
+                "DataType": "String",
+                "StringValue": "${request.header.authorization}"
+              },                 
+              "contentType": {
+                "DataType": "String",
+                "StringValue": "${request.header.content-type}"
+              },          
+              "contentLength": {
+                "DataType": "String",
+                "StringValue": "${request.header.content-length}"
+              }
+            }                        
+          QueueUrl:
+            Ref: SGInboundEmailQueue
+
+x-amazon-apigateway-cors:
+  allowMethods:
+  - "*"
+  maxAge: 0
+  allowCredentials: false
+  allowOrigins:
+  - "*"
+x-amazon-apigateway-importexport-version: "1.0"
